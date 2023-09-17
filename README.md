@@ -2,7 +2,7 @@
 This is my second project for the AI course at university of Tehran presented by Dr.Fadaei. 
 
 # About The Project 
-This project was on search bases and compare BFS / IDS / A* / weighted A* to each other.
+This project was on search bases and compare BFS / IDS / A* / weighted A* to each other. \n
 The project was about how to find the optimal path to delivery some food to their costumer and there was some trap that the AGENT should discover them and find the best solution for delivery
 
 
