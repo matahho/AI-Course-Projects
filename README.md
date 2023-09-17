@@ -7,4 +7,4 @@ The project was about how to find the optimal path to delivery some food to thei
 
 
 # Project description 
-You can find the project description in the Repo ( Its in <a href="https://github.com/matahho/AI_CA1">here</a>)
+You can find the project description in the Repo ( Its in <a href="https://github.com/matahho/AI_CA1/blob/main/AI-CA1-Spring%201402.pdf">here</a>)
