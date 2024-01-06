@@ -1,0 +1,232 @@
+import random
+import time
+import turtle
+import copy
+
+
+class OthelloUI:
+    def __init__(self, board_size=6, square_size=60):
+        self.board_size = board_size
+        self.square_size = square_size
+        self.screen = turtle.Screen()
+        self.screen.setup(self.board_size * self.square_size + 50, self.board_size * self.square_size + 50)
+        self.screen.bgcolor('white')
+        self.screen.title('Othello')
+        self.pen = turtle.Turtle()
+        self.pen.hideturtle()
+        self.pen.speed(0)
+        turtle.tracer(0, 0)
+
+    def draw_board(self, board):
+        self.pen.penup()
+        x, y = -self.board_size / 2 * self.square_size, self.board_size / 2 * self.square_size
+        for i in range(self.board_size):
+            self.pen.penup()
+            for j in range(self.board_size):
+                self.pen.goto(x + j * self.square_size, y - i * self.square_size)
+                self.pen.pendown()
+                self.pen.fillcolor('green')
+                self.pen.begin_fill()
+                self.pen.setheading(0)
+                for _ in range(4):
+                    self.pen.forward(self.square_size)
+                    self.pen.right(90)
+                self.pen.penup()
+                self.pen.end_fill()
+                self.pen.goto(x + j * self.square_size + self.square_size / 2,
+                              y - i * self.square_size - self.square_size + 5)
+                if board[i][j] == 1:
+                    self.pen.fillcolor('white')
+                    self.pen.begin_fill()
+                    self.pen.circle(self.square_size / 2 - 5)
+                    self.pen.end_fill()
+                elif board[i][j] == -1:
+                    self.pen.fillcolor('black')
+                    self.pen.begin_fill()
+                    self.pen.circle(self.square_size / 2 - 5)
+                    self.pen.end_fill()
+
+        turtle.update()
+
+
+class Othello:
+    def __init__(self, ui, minimax_depth=1, prune=True):
+        self.size = 6
+        self.seenNodes = 0 
+        self.ui = OthelloUI(self.size) if ui else None
+        self.board = [[0 for _ in range(self.size)] for _ in range(self.size)]
+        self.board[int(self.size / 2) - 1][int(self.size / 2) - 1] = self.board[int(self.size / 2)][
+            int(self.size / 2)] = 1
+        self.board[int(self.size / 2) - 1][int(self.size / 2)] = self.board[int(self.size / 2)][
+            int(self.size / 2) - 1] = -1
+        self.current_turn = random.choice([1, -1])
+        self.minimax_depth = minimax_depth
+        self.prune = prune
+
+    def get_winner(self):
+        white_count = sum([row.count(1) for row in self.board])
+        black_count = sum([row.count(-1) for row in self.board])
+        if white_count > black_count:
+            return 1
+        elif white_count < black_count:
+            return -1
+        else:
+            return 0
+
+    def get_valid_moves(self, player):
+        moves = set()
+        for i in range(self.size):
+            for j in range(self.size):
+                if self.board[i][j] == 0:
+                    for di in [-1, 0, 1]:
+                        for dj in [-1, 0, 1]:
+                            if di == 0 and dj == 0:
+                                continue
+                            x, y = i, j
+                            captured = []
+                            while 0 <= x + di < self.size and 0 <= y + dj < self.size and self.board[x + di][
+                                    y + dj] == -player:
+                                captured.append((x + di, y + dj))
+                                x += di
+                                y += dj
+                            if 0 <= x + di < self.size and 0 <= y + dj < self.size and self.board[x + di][
+                                    y + dj] == player and len(captured) > 0:
+                                moves.add((i, j))
+        return list(moves)
+
+    def make_move(self, player, move):
+        i, j = move
+        self.board[i][j] = player
+        for di in [-1, 0, 1]:
+            for dj in [-1, 0, 1]:
+                if di == 0 and dj == 0:
+                    continue
+                x, y = i, j
+                captured = []
+                while 0 <= x + di < self.size and 0 <= y + dj < self.size and self.board[x + di][y + dj] == -player:
+                    captured.append((x + di, y + dj))
+                    x += di
+                    y += dj
+                if 0 <= x + di < self.size and 0 <= y + dj < self.size and self.board[x + di][y + dj] == player:
+                    for (cx, cy) in captured:
+                        self.board[cx][cy] = player
+
+    def get_cpu_move(self):
+        moves = self.get_valid_moves(-1)
+        if len(moves) == 0:
+            return None
+        return random.choice(moves)
+
+
+    def comeback (self, prevBoard):
+        self.board = prevBoard
+
+
+    def calc_heuristic (self , move):
+        prevBoard = copy.deepcopy(self.board)
+        self.make_move(1 , move)
+        white_count = sum([row.count(1) for row in self.board])
+        black_count = sum([row.count(-1) for row in self.board])
+        heuristic = (white_count - black_count) 
+        self.comeback(prevBoard)
+        return heuristic
+    
+    def evaluation(self):
+        white_count = sum([row.count(1) for row in self.board])
+        black_count = sum([row.count(-1) for row in self.board])
+        return white_count - black_count
+    
+
+
+    def minimax(self, player, depth):
+        if depth == 0 or self.terminal_test():
+            return self.evaluation ()
+
+
+        if player == 1:
+            max_score = float('-inf')
+            valid_moves = self.get_valid_moves(player)
+            for move in valid_moves:
+                new_board = copy.deepcopy(self.board)
+                self.make_move(player, move)
+                score = self.minimax(-player, depth - 1)
+                self.comeback(new_board)
+                max_score = max(max_score, score)
+            return max_score
+
+        else:
+            min_score = float('inf')
+            valid_moves = self.get_valid_moves(player)
+            for move in valid_moves:
+                new_board = copy.deepcopy(self.board)
+                self.make_move(player, move)
+                score = self.minimax(-player, depth - 1)
+                self.comeback(new_board)
+                min_score = min(min_score, score)
+            return min_score
+
+    def get_human_move(self):
+        valid_moves = self.get_valid_moves(1)
+        if len(valid_moves) == 0:
+            return None
+        best_move = None
+        best_score = float('-inf')
+        for move in valid_moves:
+            new_board = copy.deepcopy(self.board)
+            self.make_move(1, move)
+            score = self.minimax(-1, self.minimax_depth) # Increase depth of search here
+            self.comeback(new_board)
+            if score > best_score:
+                best_score = score
+                best_move = move
+        return best_move
+
+    def terminal_test(self):
+        return len(self.get_valid_moves(1)) == 0 and len(self.get_valid_moves(-1)) == 0
+
+    def play(self):
+        winner = None
+        while not self.terminal_test():
+            if self.ui:
+                self.ui.draw_board(self.board)
+            if self.current_turn == 1:
+                move = self.get_human_move()
+                if move:
+                    self.make_move(self.current_turn, move)
+            else:
+                move = self.get_cpu_move()
+                if move:
+                    self.make_move(self.current_turn, move)
+            self.current_turn = -self.current_turn
+            if self.ui:
+                self.ui.draw_board(self.board)
+                time.sleep(1)
+        winner = self.get_winner()
+        return winner
+    
+    
+    
+    
+
+def printResult (Runs , times , seenNodes , wins):
+    print ("Number of plays : " , Runs)
+    print ("Mean running duration : " ,  round ((times/Runs),6) , "s")
+    print ("Mean of Seen Nodes is : " , (seenNodes/Runs) , "nodes")
+    print ("AI win probability : " , (wins/Runs))
+    
+
+if __name__=="__main__":
+    whiteWins = 0 
+    times = 0 
+    seenNodes = 0 
+    numberOfRuns = 1
+    for i in range(numberOfRuns):
+        tic = time.time()
+        oth = Othello(0, minimax_depth=5, prune=True)
+        winner = oth.play()
+        toc = time.time()
+        seenNodes += oth.seenNodes
+        times += round((toc - tic), 6)
+        if winner == 1 :
+            whiteWins += 1 
+    printResult(numberOfRuns , times , seenNodes , whiteWins)
